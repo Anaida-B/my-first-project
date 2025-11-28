@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vital Logs • Dashboard</title>
+  <style>
+    :root{
+      --bg-1: #0b132b;
+      --bg-2: #1c2541;
+      --accent: #5bc0be;
+      --accent-2: #f5c16c;
+      --muted: #cbd5e1;
+      --card-bg: rgba(255,255,255,0.04);
+      --glass: rgba(255,255,255,0.06);
+      --radius: 10px;
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      color: #eef2f7;
+    }
+
+    header {
+      background: rgba(8,12,30,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 18px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    header .title {
+      max-width:1100px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      gap:20px;
+      justify-content: center;
+      flex-wrap:wrap;
+    }
+    header h1 { margin:0; font-size:22px; color:var(--accent); }
+    nav ul { display:flex; gap:18px; padding:0; margin:0; list-style:none; }
+    nav a { color:var(--muted); text-decoration:none; font-weight:600; padding:6px 10px; border-radius:6px; }
+    nav a.active, nav a:hover { color: #fff; background: rgba(255,255,255,0.03); }
+
+    .page { max-width:1100px; margin: 28px auto; padding: 0 18px 80px; }
+
+    .section-head { display:flex; justify-content:space-between; margin-bottom:12px; }
+    .section-head h2 { margin:0; font-size:20px; color:var(--accent-2); }
+
+    .cards-container {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+      gap:16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: 0 6px 18px rgba(3,6,18,0.45);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      transition: transform .18s ease;
+    }
+    .card:hover { transform: translateY(-6px); }
+
+    .card .name { font-weight:700; font-size:16px; }
+    .card .meta { font-size:15px; color: var(--muted); }
+    .card .badge { display:inline-block; font-size:14px; padding:4px 8px; border-radius:8px;
+      background: rgba(91,192,190,0.12); color: var(--accent); font-weight:600; }
+
+    .empty { padding:40px; text-align:center; color:var(--muted); }
+
+    /* Floating add button */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent);
+      color:#052028;
+      border:none;
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      font-size:28px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    /* Hidden form modal */
+    .modal {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+    }
+    .modal .panel {
+      background: var(--glass);
+      padding:20px;
+      border-radius:12px;
+      width:360px;
+      box-shadow: 0 6px 20px rgba(1,6,20,0.45);
+    }
+    .modal h3 { margin-top:0; color:var(--accent); }
+    .modal label { font-size:13px; margin-top:10px; display:block; }
+    .modal input, .modal select { width:100%; padding:10px; border-radius:8px; margin-top:4px;
+      border:none; background: rgba(0,0,0,0.25); color:white; }
+    .modal .actions { display:flex; justify-content:flex-end; margin-top:12px; gap:8px; }
+    .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:var(--accent); color:#052028; }
+    .btn.secondary { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Astronaut Health & Mission Monitoring</h1>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="astronauts.html">Astronauts</a></li>
+          <li><a href="missions.html">Missions</a></li>
+          <li><a href="assignments.html">Assignments</a></li>
+          <li><a href="vitals.html" class="active">Vitals</a></li>
+          <li><a href="anomalies.html">Anomalies</a></li>
+          <li><a href="tasks.html">Tasks</a></li>
+                    <li><a href="healthAssistant.html">Health Assistant</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="section-head">
+      <h2>All Vital Logs</h2>
+      <div style="color:var(--muted); font-size:14px;">Monitor astronaut vital signs</div>
+    </div>
+    <div id="vital-log-list" class="cards-container">
+      <div class="empty">Loading vital logs…</div>
+    </div>
+  </main>
+
+  <!-- Floating Add button -->
+  <button class="fab" onclick="toggleModal(true)">+</button>
+
+  <!-- Hidden modal form -->
+  <div id="vital-modal" class="modal">
+    <div class="panel">
+      <h3 id="modal-title">Add Vital Log</h3> <form id="vital-log-form">
+        <input type="hidden" id="logDbId"> 
+
+        <label>Astronaut ID</label>
+        <input type="text" id="astronautId" name="astronautId" required>
+        <label>Mission ID</label>
+        <input type="text" id="missionId" name="missionId" required>
+        <label>Heart Rate</label>
+        <input type="number" id="heartRate" name="heartRate" required>
+        <label>Blood Pressure</label>
+        <input type="text" id="bloodPressure" name="bloodPressure" placeholder="120/80" required>
+        <label>Temperature (°F)</label>
+        <input type="number" id="temperature" name="temperature" required>
+        <label>Oxygen Level (%)</label>
+        <input type="number" id="oxygenLevel" name="oxygenLevel" required>
+        <label>Stress Level</label>
+        <select id="stressLevel" name="stressLevel" required>
+          <option value="Low">Low</option>
+          <option value="Moderate">Moderate</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+        <div class="actions">
+          <button type="button" class="btn secondary" onclick="toggleModal(false)">Cancel</button>
+          <button type="submit" class="btn primary" id="save-log-btn">Save</button> 
+        </div>
+      </form>
+    </div>
+</div>
+
+  <script src="app.js"></script>
+  <script>
+    // Global variable to store the MongoDB _id of the log being edited
+    let currentEditLogId = null; 
+
+    function toggleModal(show) {
+      document.getElementById('vital-modal').style.display = show ? 'flex' : 'none';
+      if (!show) {
+        document.getElementById('vital-log-form').reset();
+        currentEditLogId = null; // Clear edit state on close
+        // Reset modal to 'Add Log' state
+        document.getElementById('modal-title').textContent = 'Add Vital Log';
+        document.getElementById('save-log-btn').textContent = 'Save';
+      }
+    }
+
+    // ⭐️ Updated: renderVitalCard now includes the menu and log ID
+    function renderVitalCard(log) {
+      // Use log._id for data-db-id for update/delete operations
+      return `
+        <div class="card" data-db-id="${log._id}">
+            <div class="card-menu">
+                <button class="menu-btn">⋮</button>
+                <div class="menu-content">
+                    <button class="update-btn">Update</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </div>
+          <div class="name">Astronaut: ${log.astronautId}</div>
+          <div class="meta">Mission: ${log.missionId}</div>
+          <div class="meta">HR: ${log.heartRate || "N/A"} | BP: ${log.bloodPressure || "N/A"}</div>
+          <div class="meta">Temp: ${log.temperature || "N/A"}°F | O₂: ${log.oxygenLevel || "N/A"}%</div>
+          <div class="badge">Stress: ${log.stressLevel || "N/A"}</div>
+          <div class="meta" style="font-size:11px;">Logged: ${new Date(log.timestamp).toLocaleString()}</div>
+        </div>
+      `;
+    }
+
+    // 🧩 Styles for hidden 3-dot menu (must be added to the document head)
+    const style = document.createElement("style");
+    style.textContent = `
+        .card-menu { position: relative; align-self: flex-end; }
+        .menu-btn { background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+        .menu-content {
+          display: none; position: absolute; top: 24px; right: 0;
+          background: var(--glass); border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+          flex-direction: column; min-width: 100px; overflow: hidden;
+        }
+        .menu-content button {
+          background: none; color: var(--muted); border: none; text-align: left;
+          padding: 8px 12px; font-size: 14px; width: 100%; cursor: pointer;
+        }
+        .menu-content button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .card-menu.open .menu-content { display: flex; }
+    `;
+    document.head.appendChild(style);
+
+    // ⭐️ NEW: Function to load and render all logs
+    async function loadVitalLogs() {
+        try {
+            const res = await fetch("http://localhost:3000/api/vitals");
+            const data = await res.json();
+            const container = document.getElementById("vital-log-list");
+            if (!container) return;
+            container.innerHTML = data.length
+                ? data.map(renderVitalCard).join("")
+                : `<div class="empty">No vital logs yet</div>`;
+        } catch (err) {
+            console.error("Error fetching logs:", err);
+            document.getElementById("vital-log-list").innerHTML = `<div class="empty">Failed to load vital logs. Is the server running?</div>`;
+        }
+    }
+
+    // ⭐️ NEW: Function to populate form for editing
+    async function populateFormForEdit(logId) {
+        try {
+            const res = await fetch(`http://localhost:3000/api/vitals/${logId}`);
+            if (!res.ok) throw new Error("Log not found or server error");
+            const log = await res.json();
+
+            currentEditLogId = logId;
+
+            // Update modal UI
+            document.getElementById('modal-title').textContent = 'Edit Vital Log';
+            document.getElementById('save-log-btn').textContent = 'Update';
+
+            // Populate fields
+            document.getElementById('astronautId').value = log.astronautId;
+            document.getElementById('missionId').value = log.missionId;
+            document.getElementById('heartRate').value = log.heartRate;
+            document.getElementById('bloodPressure').value = log.bloodPressure;
+            document.getElementById('temperature').value = log.temperature;
+            document.getElementById('oxygenLevel').value = log.oxygenLevel;
+            document.getElementById('stressLevel').value = log.stressLevel;
+
+            toggleModal(true); // Open the modal
+        } catch (err) {
+            console.error("Error fetching log for edit:", err);
+            alert("❌ Could not load log data for editing. Check console for details.");
+        }
+    }
+
+
+    // ⭐️ UPDATED: Handle New Log (POST) OR Update Log (PATCH) Form Submission
+    document.getElementById('vital-log-form').addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+        
+        const isUpdate = !!currentEditLogId;
+        const url = isUpdate 
+            ? `http://localhost:3000/api/vitals/${currentEditLogId}` 
+            : 'http://localhost:3000/api/vitals';
+        const method = isUpdate ? 'PATCH' : 'POST';
+
+        const logData = {
+            astronautId: document.getElementById('astronautId').value,
+            missionId: document.getElementById('missionId').value,
+            heartRate: document.getElementById('heartRate').value,
+            bloodPressure: document.getElementById('bloodPressure').value,
+            temperature: document.getElementById('temperature').value,
+            oxygenLevel: document.getElementById('oxygenLevel').value,
+            stressLevel: document.getElementById('stressLevel').value
+        };
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logData)
+            });
+
+            if (res.ok) {
+                const log = await res.json();
+                alert(`✅ Log for ${log.astronautId} ${isUpdate ? 'updated' : 'added'} successfully!`);
+                toggleModal(false); 
+                loadVitalLogs(); 
+            } else {
+                const error = await res.json();
+                alert(`❌ Failed to ${isUpdate ? 'update' : 'add'} log. Error: ${error.error || res.statusText}`);
+            }
+        } catch (err) {
+            console.error(`Error ${isUpdate ? 'updating' : 'creating'} log:`, err);
+            alert("❌ Network error or server unreachable.");
+        }
+    });
+
+    // ⭐️ NEW: Event listener for menu actions (Update, Delete, Toggle)
+    document.addEventListener("click", async e => {
+        const menuBtn = e.target.closest(".menu-btn");
+        const card = e.target.closest(".card");
+
+        // 1. MENU TOGGLE LOGIC
+        if (menuBtn) {
+            const menu = menuBtn.parentElement;
+            menu.classList.toggle("open");
+            document.querySelectorAll(".card-menu.open").forEach(m => {
+                if (m !== menu) m.classList.remove("open");
+            });
+            return;
+        }
+        
+        // Close menus if clicking outside
+        if (!e.target.closest(".menu-content")) {
+             document.querySelectorAll(".card-menu.open").forEach(m => {
+                m.classList.remove("open");
+            });
+        }
+        
+        if (!card) return;
+
+        const id = card.dataset.dbId; // Use the MongoDB _id for operations
+
+        // 2. DELETE ACTION
+        if (e.target.classList.contains("delete-btn")) {
+            if (confirm(`Delete this vital log?`)) {
+                try {
+                    const res = await fetch(`http://localhost:3000/api/vitals/${id}`, { method: "DELETE" });
+                    if (res.ok) {
+                        alert("✅ Log deleted successfully");
+                        loadVitalLogs();
+                    } else {
+                        const error = await res.json();
+                        alert(`❌ Failed to delete log. ${error.error}`);
+                    }
+                } catch (err) {
+                    alert("❌ Network error during deletion.");
+                }
+            }
+        }
+
+        // 3. UPDATE ACTION
+        if (e.target.classList.contains("update-btn")) {
+            populateFormForEdit(id);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadVitalLogs();
+    });
+  </script>
+</body>
+</html>

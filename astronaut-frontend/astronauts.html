@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Astronauts • Dashboard</title>
+
+  <style>
+    :root{
+      --bg-1: #0b132b;
+      --bg-2: #1c2541;
+      --accent: #5bc0be;
+      --accent-2: #f5c16c;
+      --muted: #cbd5e1;
+      --card-bg: rgba(255,255,255,0.04);
+      --glass: rgba(255,255,255,0.06);
+      --radius: 10px;
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      color: #eef2f7;
+    }
+
+    header {
+      background: rgba(8,12,30,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 18px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    header .title {
+      max-width:1100px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      gap:20px;
+      justify-content: center;
+      flex-wrap:wrap;
+    }
+    header h1 { margin:0; font-size:22px; color:var(--accent); }
+    nav ul { display:flex; gap:18px; padding:0; margin:0; list-style:none; }
+    nav a { color:var(--muted); text-decoration:none; font-weight:600; padding:6px 10px; border-radius:6px; }
+    nav a.active, nav a:hover { color: #fff; background: rgba(255,255,255,0.03); }
+
+    .page { max-width:1100px; margin: 28px auto; padding: 0 18px 80px; }
+
+    .section-head { display:flex; justify-content:space-between; margin-bottom:12px; }
+    .section-head h2 { margin:0; font-size:20px; color:var(--accent-2); }
+
+    .cards-container {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+      gap:16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: 0 6px 18px rgba(3,6,18,0.45);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      transition: transform .18s ease;
+      position: relative;
+      overflow: visible;
+    }
+    .card:hover { transform: translateY(-6px); }
+
+    .card p { margin: 2px 0; font-size: 14px; }
+    .card strong { font-weight: 600; color: var(--accent); }
+
+    .card img {
+      width:100%;
+      height:180px;
+      object-fit:cover;
+      border-radius: var(--radius);
+    }
+    .card .name { font-weight:700; font-size:16px; }
+    .card .meta { font-size:15px; color: var(--muted); }
+    .card .badge {
+      display:inline-block; font-size:14px; padding:4px 8px; border-radius:8px;
+      background: rgba(91,192,190,0.12); color: var(--accent); font-weight:600;
+    }
+
+    .empty { padding:40px; text-align:center; color:var(--muted); }
+
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent);
+      color:#052028;
+      border:none;
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      font-size:28px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    .card-menu {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+    }
+    .menu-btn {
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+      transition: background 0.2s ease;
+    }
+    .menu-btn:hover { background: rgba(91,192,190,0.6); }
+
+    .menu-options {
+      position: absolute;
+      top: 32px;
+      right: 0;
+      background: var(--bg-2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(-4px);
+    }
+    .menu-options.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .menu-options button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .menu-options button:hover { background: #334155; }
+
+    .hidden { display: none; }
+
+    .modal {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+    }
+    .modal .panel {
+      background: var(--glass);
+      padding:20px;
+      border-radius:12px;
+      width:360px;
+      box-shadow: 0 6px 20px rgba(1,6,20,0.45);
+    }
+    .modal h3 { margin-top:0; color:var(--accent); }
+    .modal label { font-size:15px; margin-top:10px; display:block; }
+    .modal input {
+      width:100%; padding:10px; border-radius:8px; margin-top:4px;
+      border:none; background: rgba(0,0,0,0.25); color:white;
+    }
+    .modal .actions {
+      display:flex; justify-content:flex-end; margin-top:12px; gap:8px;
+    }
+    .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:var(--accent); color:#052028; }
+    .btn.secondary { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Astronaut Health & Mission Monitoring</h1>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="astronauts.html" class="active">Astronauts</a></li>
+          <li><a href="missions.html">Missions</a></li>
+          <li><a href="assignments.html">Assignments</a></li>
+          <li><a href="vitals.html">Vitals</a></li>
+          <li><a href="anomalies.html">Anomalies</a></li>
+          <li><a href="tasks.html">Tasks</a></li>
+          <li><a href="healthAssistant.html">Health Assistant</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="section-head">
+      <h2>All Astronauts</h2>
+      <div style="color:var(--muted); font-size:14px;">
+        Manage astronaut profiles and view their details
+      </div>
+    </div>
+    <div id="astronaut-list" class="cards-container">
+      <div class="empty">Loading astronauts…</div>
+    </div>
+  </main>
+
+  <!-- Floating Add Button -->
+  <button class="fab" onclick="toggleModal(true)">+</button>
+
+  <!-- Modal for Add/Edit Astronaut -->
+  <div id="astronaut-modal" class="modal">
+    <div class="panel">
+      <h3>Add Astronaut</h3>
+      <form id="astronaut-form">
+        <label>Astronaut ID</label>
+        <input id="astronautId" name="astronautId" type="text" required placeholder="e.g. AST-001">
+        <input id="_id" name="_id" type="hidden">
+
+        <label>Health Baseline</label>
+        <input id="healthBaseline" name="healthBaseline" type="text" required>
+
+        <label>Name</label>
+        <input id="name" name="name" type="text" required>
+
+        <label>Gender</label>
+        <input id="gender" name="gender" type="text">
+
+        <label>Age</label>
+        <input id="age" name="age" type="number">
+
+        <label>Nationality</label>
+        <input id="nationality" name="nationality" type="text">
+
+        <label>Specialization</label>
+        <input id="specialization" name="specialization" type="text">
+
+        <label>Photo URL</label>
+        <input id="photoUrl" name="photoUrl" type="url" placeholder="https://...">
+
+        <div class="actions">
+          <button type="button" class="btn secondary" onclick="toggleModal(false)">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+<script>
+/* ---------- Fetch & render ---------- */
+async function fetchAstronautsFromDB() {
+  try {
+    const response = await fetch("/api/astronauts");
+    if (!response.ok) throw new Error("Server error: " + response.status);
+    const data = await response.json();
+
+    // Save a copy locally for offline fallback
+    localStorage.setItem("astronauts", JSON.stringify(data));
+    renderAstronauts(data);
+  } catch (err) {
+    console.warn("DB fetch failed, loading from localStorage instead:", err);
+    const fallback = JSON.parse(localStorage.getItem("astronauts") || "[]");
+    renderAstronauts(fallback);
+  }
+}
+
+function renderAstronauts(data) {
+  const list = document.getElementById("astronaut-list");
+  if (!data || data.length === 0) {
+    list.innerHTML = `<div class="empty">No astronauts found.</div>`;
+    return;
+  }
+  list.innerHTML = data.map(renderAstronautCard).join("");
+}
+
+function renderAstronautCard(a) {
+  const photo = a.photoUrl
+    ? `<img src="${a.photoUrl}" alt="${a.name}" class="astronaut-photo" onerror="this.onerror=null;this.src='images/default-astronaut.jpg'">`
+    : `<img src="images/default-astronaut.jpg" alt="${a.name}" class="astronaut-photo">`;
+
+  return `
+    <div class="card" data-id="${a._id}">
+      <div class="card-menu">
+        <button class="menu-btn" onclick="toggleCardMenu(event)">⋮</button>
+        <div class="menu-options">
+          <button onclick="editAstronaut('${a._id}')">Update</button>
+          <button onclick="deleteAstronaut('${a._id}')">Delete</button>
+        </div>
+      </div>
+      ${photo}
+      <p><strong>ID:</strong> ${a.astronautId || ""}</p>
+      <p><strong>Name:</strong> ${a.name || ""}</p>
+      <p><strong>Gender:</strong> ${a.gender || ""}</p>
+      <p><strong>Age:</strong> ${a.age || ""}</p>
+      <p><strong>Nationality:</strong> ${a.nationality || ""}</p>
+      <p><strong>Specialization:</strong> ${a.specialization || ""}</p>
+      <p><strong>Health Baseline:</strong> ${a.healthBaseline || "N/A"}</p>
+    </div>
+  `;
+}
+/* ---------- Modal control ---------- */
+function toggleModal(show) {
+  const modal = document.getElementById('astronaut-modal');
+  const form = document.getElementById('astronaut-form');
+  modal.style.display = show ? 'flex' : 'none';
+  if (!show) {
+    form.reset();
+    document.getElementById("astronautId").value = "";
+    document.getElementById("_id").value = "";
+    const h3 = document.querySelector("#astronaut-modal h3");
+    if (h3) h3.textContent = "Add Astronaut";
+  }
+}
+
+/* ---------- Edit / Delete ---------- */
+async function editAstronaut(id) {
+  try {
+    const res = await fetch(`/api/astronauts/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch astronaut: ' + res.status);
+    const a = await res.json();
+
+    document.getElementById("_id").value = a._id || "";
+    document.getElementById("astronautId").value = a.astronautId || "";
+    document.getElementById("healthBaseline").value = a.healthBaseline || "";
+    document.getElementById("name").value = a.name || "";
+    document.getElementById("gender").value = a.gender || "";
+    document.getElementById("age").value = a.age || "";
+    document.getElementById("nationality").value = a.nationality || "";
+    document.getElementById("specialization").value = a.specialization || "";
+    document.getElementById("photoUrl").value = a.photoUrl || "";
+
+    const h3 = document.querySelector("#astronaut-modal h3");
+    if (h3) h3.textContent = "Update Astronaut";
+    toggleModal(true);
+  } catch (err) {
+    console.error("Error loading astronaut for edit:", err);
+    alert("Failed to load astronaut details.");
+  }
+}
+
+async function deleteAstronaut(id) {
+  if (!confirm("Are you sure you want to delete this astronaut?")) return;
+  try {
+    const res = await fetch(`/api/astronauts/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Delete failed: " + res.status);
+    fetchAstronautsFromDB();
+    if (typeof loadDashboard === "function") loadDashboard();
+  } catch (err) {
+    console.error("Error deleting astronaut:", err);
+    alert("Failed to delete astronaut.");
+  }
+}
+
+function toggleCardMenu(event) {
+  event.stopPropagation();
+  const menu = event.currentTarget.nextElementSibling;
+  const isVisible = menu.classList.contains("show");
+
+  document.querySelectorAll(".menu-options").forEach(m => m.classList.remove("show"));
+  if (!isVisible) menu.classList.add("show");
+}
+
+document.addEventListener("click", () => {
+  document.querySelectorAll(".menu-options").forEach(m => m.classList.remove("show"));
+});
+
+/* ---------- Form submit: add or update ---------- */
+document.getElementById("astronaut-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const id = document.getElementById("_id").value.trim();
+  const payload = {
+    astronautId: document.getElementById("astronautId").value.trim(),
+    name: document.getElementById("name").value.trim(),
+    gender: document.getElementById("gender").value.trim(),
+    age: document.getElementById("age").value.trim(),
+    nationality: document.getElementById("nationality").value.trim(),
+    specialization: document.getElementById("specialization").value.trim(),
+    healthBaseline: document.getElementById("healthBaseline").value.trim(),
+    photoUrl: document.getElementById("photoUrl").value.trim() || null
+  };
+
+  if (!payload.name) {
+    alert("Name is required.");
+    return;
+  }
+  if (!payload.astronautId) {
+    alert("Astronaut ID is required.");
+    return;
+  }
+
+  try {
+    let res;
+    if (id) {
+      res = await fetch(`/api/astronauts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch("/api/astronauts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    let bodyText = "";
+    try {
+      const json = await res.clone().json();
+      bodyText = json.error || json.message || JSON.stringify(json);
+    } catch (e) {
+      bodyText = await res.clone().text();
+    }
+
+    if (res.ok) {
+      const successMsg = id ? "Astronaut updated successfully." : "Astronaut created successfully.";
+      toggleModal(false);
+      document.getElementById("_id").value = "";
+      fetchAstronautsFromDB();
+      if (typeof loadDashboard === "function") loadDashboard();
+      alert(successMsg);
+      return;
+    } else {
+      const lower = (bodyText || "").toLowerCase();
+      if (lower.includes("duplicate key") || lower.includes("e11000") || lower.includes("astronautid")) {
+        alert("Error: The Astronaut ID you entered already exists. Please choose a unique Astronaut ID.");
+      } else if (lower.includes("validation failed")) {
+        alert("Validation error: " + bodyText);
+      } else {
+        alert("Save failed: " + (bodyText || res.statusText || res.status));
+      }
+      throw new Error("Save failed: " + res.status + " " + bodyText);
+    }
+  } catch (err) {
+    console.error("Error saving astronaut:", err);
+  }
+});
+
+/* ---------- Initial load ---------- */
+fetchAstronautsFromDB();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

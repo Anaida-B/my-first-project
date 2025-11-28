@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anomalies • Dashboard</title>
+    <style>
+        /* (Your CSS is unchanged, removed here for brevity) */
+        :root {
+            --bg-1: #0b132b;
+            --bg-2: #1c2541;
+            --accent: #5bc0be;
+            --accent-2: #f5c16c;
+            --muted: #cbd5e1;
+            --card-bg: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.06);
+            --radius: 10px;
+        }
+
+        html,body {
+            height: 100%;
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+            color: #eef2f7;
+        }
+
+        header {
+            background: rgba(8,12,30,0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 18px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        header .title {
+            max-width:1100px;
+            margin: 0 auto;
+            display:flex;
+            align-items:center;
+            gap:20px;
+            justify-content: center;
+            flex-wrap:wrap;
+        }
+        header h1 { margin:0; font-size:22px; color:var(--accent); }
+        nav ul { display:flex; gap:18px; padding:0; margin:0; list-style:none; }
+        nav a { color:var(--muted); text-decoration:none; font-weight:600; padding:6px 10px; border-radius:6px; }
+        nav a.active, nav a:hover { color: #fff; background: rgba(255,255,255,0.03); }
+
+        .page { max-width:1100px; margin: 28px auto; padding: 0 18px 80px; }
+
+        .section-head { display:flex; justify-content:space-between; margin-bottom:12px; }
+        .section-head h2 { margin:0; font-size:20px; color:var(--accent-2); }
+
+        .cards-container {
+            display:grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+            gap:16px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding:14px;
+            box-shadow: 0 6px 18px rgba(3,6,18,0.45);
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+            position: relative;
+            overflow: visible;
+            transition: transform .18s ease;
+        }
+        .card:hover { transform: translateY(-6px); }
+
+        .card .name { font-weight:700; font-size:16px; }
+        .card .meta { font-size:13px; color: var(--muted); }
+        .card .badge { 
+            display:inline-block; font-size:12px; padding:4px 8px; border-radius:8px;
+            background: rgba(91,192,190,0.12); color: var(--accent); font-weight:600; 
+            /* Added color adjustment for severity */
+            margin-top: 4px;
+        }
+        .card .badge[data-severity="High"], .card .badge[data-severity="Critical"] {
+            background: rgba(245, 96, 68, 0.15); /* Reddish tint */
+            color: #f56044;
+        }
+        
+
+        .empty { padding:40px; text-align:center; color:var(--muted); }
+
+        /* Floating add button */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent);
+            color:#052028;
+            border:none;
+            width:56px;
+            height:56px;
+            border-radius:50%;
+            font-size:28px;
+            font-weight:700;
+            cursor:pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        }
+
+        /* Three-dot menu */
+        .card-menu {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 2;
+        }
+
+        .menu-btn {
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: white; 
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+            transition: background 0.2s ease;
+            font-weight: 900; 
+            line-height: 1;
+        }
+
+        .menu-btn:hover {
+            background: rgba(91,192,190,0.6);
+        }
+
+        .menu-options {
+            position: absolute;
+            top: 30px;
+            right: 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            transform: translateY(-4px);
+        }
+
+        .menu-options:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+            display: flex;
+        }
+
+        .menu-options button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .menu-options button:hover {
+            background: #334155;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Modal */
+        .modal {
+            display:none;
+            position:fixed;
+            top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            align-items:center;
+            justify-content:center;
+            z-index:100;
+        }
+        .modal .panel {
+            background: var(--glass);
+            padding:20px;
+            border-radius:12px;
+            width:360px;
+            box-shadow: 0 6px 20px rgba(1,6,20,0.45);
+        }
+        .modal h3 { margin-top:0; color:var(--accent); }
+        .modal label { font-size:15px; margin-top:10px; display:block; }
+        .modal input, .modal textarea, .modal select {
+            width:100%; padding:10px; border-radius:8px; margin-top:4px;
+            border:none; background: rgba(0,0,0,0.25); color:white;
+        }
+        .modal .actions { display:flex; justify-content:flex-end; margin-top:12px; gap:8px; }
+        .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+        .btn.primary { background:var(--accent); color:#052028; }
+        .btn.secondary { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title">
+            <h1>Astronaut Health & Mission Monitoring</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="astronauts.html">Astronauts</a></li>
+                    <li><a href="missions.html">Missions</a></li>
+                    <li><a href="assignments.html">Assignments</a></li>
+                    <li><a href="vitals.html">Vitals</a></li>
+                    <li><a href="anomalies.html" class="active">Anomalies</a></li>
+                    <li><a href="tasks.html">Tasks</a></li>
+                    
+                                        <li><a href="healthAssistant.html">Health Assistant</a></li>
+                    
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="section-head">
+            <h2>All Anomalies</h2>
+            <div style="color:var(--muted); font-size:14px;">View, manage, and log detected anomalies</div>
+        </div>
+        <div id="anomaly-list" class="cards-container">
+            <div class="empty">Loading anomalies…</div>
+        </div>
+    </main>
+
+    <button class="fab" onclick="toggleModal(true)">+</button>
+
+    <div id="anomaly-modal" class="modal">
+        <div class="panel">
+            <h3 id="modal-title">Add New Anomaly</h3>
+            <form id="anomaly-form">
+                <input type="hidden" id="anomalyId" name="anomalyId"> 
+
+                <label>Astronaut ID</label>
+                <input type="text" id="astronautId" required>
+
+                <label>Anomaly Type</label>
+                <input type="text" id="anomalyType" required>
+
+                <label>Vital Log ID (Source)</label>
+                <input type="text" id="logId" required placeholder="Enter Vital Log ID or N/A for manual entry"> 
+
+                <label>Detection Source</label>
+                <input type="text" id="detectionSource" required>
+
+                <label>Severity Level</label>
+                <select id="severityLevel" required>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+
+                <label>Response Action</label>
+                <input type="text" id="responseAction" required>
+                
+                <label>Detection Time</label>
+                <input type="datetime-local" id="detectionTime" required> 
+                
+                <div class="actions">
+                    <button type="button" class="btn secondary" onclick="toggleModal(false)">Cancel</button>
+                    <button type="submit" class="btn primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ⭐️ FIX 1: Using absolute URL to avoid 404/file system issues ⭐️
+        const API_URL = "http://localhost:3000/api/anomalies"; 
+        const modalTitle = document.getElementById("modal-title");
+
+        function toggleModal(show) {
+            document.getElementById('anomaly-modal').style.display = show ? 'flex' : 'none';
+            if(!show) {
+                // Reset form and title when closed
+                document.getElementById('anomaly-form').reset();
+                document.getElementById('anomalyId').value = "";
+                modalTitle.textContent = "Add New Anomaly";
+            }
+        }
+
+        // Load all anomalies
+        async function loadAnomalies() {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const container = document.getElementById("anomaly-list");
+
+            if (!data.length) {
+                container.innerHTML = `<div class='empty'>No anomalies found.</div>`;
+                return;
+            }
+
+            // ⭐️ FIX 2: Updated card rendering to include astronautId ⭐️
+            container.innerHTML = data.map(a => `
+                <div class="card" data-id="${a._id}">
+                    <div class="card-menu">
+                        <button class="menu-btn" onclick="toggleCardMenu(event)">...</button>
+                        <div class="menu-options hidden">
+                            <button onclick="editAnomaly('${a._id}')">Update</button>
+                            <button onclick="deleteAnomaly('${a._id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="name">${a.anomalyType}</div>
+                    <div class="meta">Astronaut ID: <strong>${a.astronautId || "N/A"}</strong></div>
+                    <div class="meta">Source: ${a.detectionSource}</div>
+                    <div class="meta">Log ID: ${a.logId || "N/A (Manual)"}</div>
+                    <div class="meta">Action: ${a.responseAction}</div>
+                    <div class="badge" data-severity="${a.severityLevel}">${a.severityLevel}</div>
+                    <div class="meta">Time: ${a.detectionTime ? new Date(a.detectionTime).toLocaleString() : "N/A"}</div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle card menu (unchanged)
+        function toggleCardMenu(event) {
+            event.stopPropagation();
+            
+            // Close all other menus
+            document.querySelectorAll(".menu-options").forEach(menu => {
+                if (menu !== event.target.nextElementSibling) {
+                    menu.classList.add("hidden");
+                }
+            });
+
+            const menu = event.target.nextElementSibling;
+            menu.classList.toggle("hidden");
+            
+            // Close menu when clicking outside
+            if (!menu.classList.contains("hidden")) {
+                 document.addEventListener("click", () => menu.classList.add("hidden"), { once: true });
+            }
+        }
+
+        // Delete anomaly (unchanged)
+        async function deleteAnomaly(id) {
+            if (!confirm("Are you sure you want to delete this anomaly?")) return;
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+                if (!res.ok) throw new Error("Failed to delete");
+                alert("Anomaly deleted successfully");
+                loadAnomalies();
+            } catch (error) {
+                 alert("Error deleting anomaly: " + error.message);
+            }
+        }
+
+        // ⭐️ FIX 3: Update function to populate astronautId ⭐️
+        async function editAnomaly(id) {
+            const res = await fetch(`${API_URL}/${id}`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch anomaly data: Server returned status ${res.status}`);
+            }
+            const a = await res.json();
+
+            // 1. Populate fields
+            document.getElementById("anomalyId").value = id;
+            document.getElementById("astronautId").value = a.astronautId; // ⭐️ POPULATE ASTRONAUT ID ⭐️
+            document.getElementById("anomalyType").value = a.anomalyType;
+            document.getElementById("logId").value = a.logId; 
+            document.getElementById("detectionSource").value = a.detectionSource;
+            document.getElementById("severityLevel").value = a.severityLevel;
+            document.getElementById("responseAction").value = a.responseAction;
+            
+            // Format detectionTime for input type="datetime-local" (YYYY-MM-DDThh:mm)
+            if (a.detectionTime) {
+                const time = new Date(a.detectionTime);
+                const localIsoTime = new Date(time.getTime() - (time.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                document.getElementById("detectionTime").value = localIsoTime;
+            } else {
+                 document.getElementById("detectionTime").value = '';
+            }
+
+            // 2. Set modal context
+            modalTitle.textContent = "Update Anomaly";
+            toggleModal(true);
+        }
+
+        // ⭐️ FIX 4: Submission handler logic (Changed method to PATCH) ⭐️
+        document.getElementById("anomaly-form").addEventListener("submit", async e => {
+            e.preventDefault();
+            const form = e.target;
+            
+            const id = document.getElementById("anomalyId").value; 
+            
+            // Collect all schema-correct fields
+            const anomaly = {
+                astronautId: form.astronautId.value, // ⭐️ ADDED BACK ⭐️
+                anomalyType: form.anomalyType.value,
+                logId: form.logId.value,
+                detectionSource: form.detectionSource.value,
+                severityLevel: form.severityLevel.value,
+                responseAction: form.responseAction.value,
+                detectionTime: form.detectionTime.value 
+            };
+
+            // PATCH is the most appropriate method for partial updates (which the server uses)
+            const method = id ? "PATCH" : "POST"; 
+            const url = id ? `${API_URL}/${id}` : API_URL;
+            
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(anomaly)
+                });
+
+                if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+
+                alert(id ? "Anomaly updated successfully" : "Anomaly added successfully");
+                toggleModal(false);
+                loadAnomalies();
+            } catch (error) {
+                 alert(`Error saving anomaly. Check your network or server logs. Details: ${error.message}`);
+            }
+        });
+
+        // Initialize
+        loadAnomalies();
+    </script>
+</body>
+</html>

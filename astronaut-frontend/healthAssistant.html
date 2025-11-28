@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Health Assistant</title>
+    <style>
+        /* ⭐️ ALL ESSENTIAL GLOBAL AND HEADER/NAV STYLES INCLUDED ⭐️ */
+        :root {
+            --bg-1: #0b132b;
+            --bg-2: #1c2541;
+            --accent: #5bc0be;
+            --accent-2: #f5c16c;
+            --muted: #cbd5e1;
+            --card-bg: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.06);
+            --radius: 10px;
+        }
+
+        html,body {
+            height: 100%;
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+            color: #eef2f7;
+        }
+
+        header {
+            background: rgba(8,12,30,0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 18px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        header .title {
+            max-width:1100px;
+            margin: 0 auto;
+            display:flex;
+            align-items:center;
+            gap:20px;
+            justify-content: center;
+            flex-wrap:wrap;
+        }
+        header h1 { margin:0; font-size:22px; color:var(--accent); }
+        
+        /* ⭐️ NAVIGATION STYLES - THIS IS CRITICAL ⭐️ */
+        nav ul { display:flex; gap:18px; padding:0; margin:0; list-style:none; }
+        nav a { color:var(--muted); text-decoration:none; font-weight:600; padding:6px 10px; border-radius:6px; }
+        nav a.active, nav a:hover { color: #fff; background: rgba(255,255,255,0.03); }
+
+        .page { max-width:1100px; margin: 28px auto; padding: 0 18px 80px; }
+
+        /* STYLING SPECIFIC TO THIS PAGE */
+        #assistant-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: var(--card-bg); 
+            border-radius: var(--radius);
+            box-shadow: 0 6px 18px rgba(3,6,18,0.45);
+        }
+        h2 { color: var(--accent-2); }
+        
+        #aiResponseArea {
+            min-height: 200px;
+            background-color: var(--bg-2); 
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #fff;
+            border-radius: 8px;
+        }
+        
+        label, input, textarea, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        
+        input, textarea {
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.25); 
+            color: white;
+            font-size: 16px; 
+        }
+        
+        button {
+            background-color: var(--accent);
+            color: var(--bg-1); 
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            padding: 10px;
+            margin-top: 15px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title">
+            <h1>Astronaut Health & Mission Monitoring</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="astronauts.html">Astronauts</a></li>
+                    <li><a href="missions.html">Missions</a></li>
+                    <li><a href="assignments.html">Assignments</a></li>
+                    <li><a href="vitals.html">Vitals</a></li>
+                    <li><a href="anomalies.html">Anomalies</a></li>
+                    <li><a href="tasks.html">Tasks</a></li>
+                    
+                    <li><a href="healthAssistant.html" class="active">Health Assistant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="page">
+        <div id="assistant-container">
+            <h2>AI Health Assistant - Protocol Search</h2>
+            <p style="color: var(--muted);">Ask a health or procedural question regarding the current mission context.</p>
+
+            <label for="queryAstronautId" style="color: var(--muted);">Astronaut ID (For Context):</label>
+            <input type="text" id="queryAstronautId" placeholder="e.g., A-101 (Optional)">
+
+            <label for="healthQueryInput" style="color: var(--muted);">Your Question:</label>
+            <textarea id="healthQueryInput" rows="4" placeholder="e.g., What are the procedures for handling a minor head laceration in microgravity?"></textarea>
+            
+            <button onclick="submitHealthQuery()">Ask Assistant</button>
+
+            <h3>Assistant Response:</h3>
+            <div id="aiResponseArea">
+                <p style="color: var(--muted);">Waiting for query...</p>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        async function submitHealthQuery() {
+            const astronautId = document.getElementById('queryAstronautId').value;
+            const userQuery = document.getElementById('healthQueryInput').value;
+            const responseArea = document.getElementById('aiResponseArea');
+
+            if (!userQuery) {
+                responseArea.innerHTML = "<p style='color: #f56044;'>Please enter a question.</p>";
+                return;
+            }
+
+            responseArea.innerHTML = "<p style='color: var(--muted);'>Analyzing query... (Please wait a few seconds)</p>";
+
+            try {
+                const response = await fetch('http://localhost:3000/api/ai/query', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ astronautId, userQuery })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Display the formatted response
+                responseArea.innerHTML = `
+                    <p style="font-weight: bold; color: var(--accent);">[Query Submitted: ${new Date().toLocaleTimeString()}]</p>
+                    ${data.result.replace(/\n/g, '<br>')}
+                `;
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                responseArea.innerHTML = `<p style='color: #f56044;'>ERROR: Could not connect to AI service. Check server console for details. (${error.message})</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

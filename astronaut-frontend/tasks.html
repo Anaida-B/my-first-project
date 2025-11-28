@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tasks • Dashboard</title>
+
+  <style>
+    :root{
+      --bg-1: #0b132b;
+      --bg-2: #1c2541;
+      --accent: #5bc0be;
+      --accent-2: #f5c16c;
+      --muted: #cbd5e1;
+      --card-bg: rgba(255,255,255,0.04);
+      --glass: rgba(255,255,255,0.06);
+      --radius: 10px;
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      color: #eef2f7;
+    }
+
+    header {
+      background: rgba(8,12,30,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 18px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    header .title {
+      max-width:1100px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      gap:20px;
+      justify-content: center;
+      flex-wrap:wrap;
+    }
+    header h1 { margin:0; font-size:22px; color:var(--accent); }
+    nav ul { display:flex; gap:18px; padding:0; margin:0; list-style:none; }
+    nav a { color:var(--muted); text-decoration:none; font-weight:600; padding:6px 10px; border-radius:6px; }
+    nav a.active, nav a:hover { color: #fff; background: rgba(255,255,255,0.03); }
+
+    .page { max-width:1100px; margin: 28px auto; padding: 0 18px 80px; }
+
+    .section-head { display:flex; justify-content:space-between; margin-bottom:12px; }
+    .section-head h2 { margin:0; font-size:20px; color:var(--accent-2); }
+
+    .cards-container {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+      gap:16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: 0 6px 18px rgba(3,6,18,0.45);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      transition: transform .18s ease;
+    }
+    .card:hover { transform: translateY(-6px); }
+
+    .card .name { font-weight:700; font-size:16px; }
+    .card .meta { font-size:13px; color: var(--muted); }
+    .card .badge { display:inline-block; font-size:12px; padding:4px 8px; border-radius:8px;
+      background: rgba(91,192,190,0.12); color: var(--accent); font-weight:600; }
+
+    .empty { padding:40px; text-align:center; color:var(--muted); }
+
+    /* Floating add button */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent);
+      color:#052028;
+      border:none;
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      font-size:28px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    /* Hidden form modal */
+    .modal {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+    }
+    .modal .panel {
+      background: var(--glass);
+      padding:20px;
+      border-radius:12px;
+      width:360px;
+      box-shadow: 0 6px 20px rgba(1,6,20,0.45);
+    }
+    .modal h3 { margin-top:0; color:var(--accent); }
+    .modal label { font-size:13px; margin-top:10px; display:block; }
+    .modal input { width:100%; padding:10px; border-radius:8px; margin-top:4px;
+      border:none; background: rgba(0,0,0,0.25); color:white; }
+    .modal .actions { display:flex; justify-content:flex-end; margin-top:12px; gap:8px; }
+    .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:var(--accent); color:#052028; }
+    .btn.secondary { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Astronaut Health & Mission Monitoring</h1>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="astronauts.html">Astronauts</a></li>
+          <li><a href="missions.html">Missions</a></li>
+          <li><a href="assignments.html">Assignments</a></li>
+          <li><a href="vitals.html">Vitals</a></li>
+          <li><a href="anomalies.html">Anomalies</a></li>
+          <li><a href="tasks.html" class="active">Tasks</a></li>
+                    <li><a href="healthAssistant.html">Health Assistant</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="section-head">
+      <h2>All Tasks</h2>
+      <div style="color:var(--muted); font-size:14px;">Manage tasks and schedule for astronauts</div>
+    </div>
+    <div id="task-list" class="cards-container">
+      <div class="empty">Loading tasks…</div>
+    </div>
+  </main>
+
+  <button class="fab" onclick="toggleTaskModal(true)">+</button>
+
+  <div id="task-modal" class="modal">
+    <div class="panel">
+      <h3 id="modal-title">Add Task</h3> 
+      <form id="task-form">
+        <input type="hidden" id="taskDbId"> 
+
+        <label>Task ID</label>
+        <input id="taskID" required>
+
+        <label>Task Name</label>
+        <input id="taskName" required>
+
+        <label>Task Type</label>
+        <input id="taskType" placeholder="EVA, Experiment, System Check" required>
+
+        <label>Scheduled Start</label>
+        <input id="scheduledStartTime" type="datetime-local" required>
+
+        <label>Estimated Duration (minutes)</label>
+        <input id="estimatedDuration" type="number" required>
+
+        <div class="actions">
+          <button type="button" class="btn secondary" onclick="toggleTaskModal(false)">Cancel</button>
+          <button type="submit" class="btn primary" id="save-task-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+  <script>
+    // Global variable to store the ID of the task being edited
+    let currentEditTaskId = null;
+
+    function toggleTaskModal(show) {
+        document.getElementById('task-modal').style.display = show ? 'flex' : 'none';
+        if (!show) {
+            document.getElementById('task-form').reset();
+            currentEditTaskId = null; // Clear edit state on close
+            // Reset modal to 'Add Task' state
+            document.getElementById('modal-title').textContent = 'Add Task';
+            document.getElementById('save-task-btn').textContent = 'Save';
+            document.getElementById('taskID').removeAttribute('disabled'); // Enable taskID input again
+        } else {
+             // For update, we might want to disable taskID changing
+             // document.getElementById('taskID').setAttribute('disabled', 'true');
+        }
+    }
+
+    // ⭐️ FIX: COMPLETE renderTaskCard function
+    function renderTaskCard(task) {
+        return `
+            <div class="card" data-id="${task.taskID}" data-db-id="${task._id}">
+                <div class="card-menu">
+                    <button class="menu-btn">⋮</button>
+                    <div class="menu-content">
+                        <button class="update-btn">Update</button>
+                        <button class="delete-btn">Delete</button>
+                    </div>
+                </div>
+                <div class="name">${task.taskName}</div>
+                <div class="meta">ID: ${task.taskID}</div>
+                <div class="meta">Type: ${task.taskType}</div>
+                <div class="meta">Start: ${new Date(task.scheduledStartTime).toLocaleString()}</div>
+                <div class="meta">Duration: ${task.estimatedDuration} min</div>
+            </div>
+        `;
+    }
+
+    // 🧩 Styles for hidden 3-dot menu (moved here for completeness)
+    const style = document.createElement("style");
+    style.textContent = `
+        .card-menu {
+          position: relative;
+          align-self: flex-end;
+        }
+        .menu-btn {
+          background: transparent;
+          border: none;
+          color: var(--muted);
+          font-size: 18px;
+          cursor: pointer;
+        }
+        .menu-content {
+          display: none;
+          position: absolute;
+          top: 24px;
+          right: 0;
+          background: var(--glass);
+          border-radius: 8px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+          flex-direction: column;
+          min-width: 100px;
+          overflow: hidden;
+        }
+        .menu-content button {
+          background: none;
+          color: var(--muted);
+          border: none;
+          text-align: left;
+          padding: 8px 12px;
+          font-size: 14px;
+          width: 100%;
+          cursor: pointer;
+        }
+        .menu-content button:hover {
+          background: rgba(255,255,255,0.1);
+          color: #fff;
+        }
+        .card-menu.open .menu-content {
+          display: flex;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 🧩 Fetch & render tasks (unchanged)
+    async function loadTasksStyled() {
+        try {
+            const res = await fetch("http://localhost:3000/api/tasks");
+            const data = await res.json();
+            const container = document.getElementById("task-list");
+            if (!container) return;
+            container.innerHTML = data.length
+                ? data.map(renderTaskCard).join("")
+                : `<div class="empty">No tasks yet</div>`;
+        } catch (err) {
+            console.error("Error fetching tasks:", err);
+            document.getElementById("task-list").innerHTML = `<div class="empty">Failed to load tasks. Is the server running?</div>`;
+        }
+    }
+
+    // ⭐️ Updated: Handle New Task (POST) OR Update Task (PATCH) Form Submission
+    document.getElementById('task-form').addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+        
+        const isUpdate = !!currentEditTaskId;
+        const url = isUpdate 
+            ? `http://localhost:3000/api/tasks/${currentEditTaskId}` 
+            : 'http://localhost:3000/api/tasks';
+        const method = isUpdate ? 'PATCH' : 'POST';
+
+        const taskData = {
+            taskID: document.getElementById('taskID').value,
+            taskName: document.getElementById('taskName').value,
+            taskType: document.getElementById('taskType').value,
+            scheduledStartTime: document.getElementById('scheduledStartTime').value, 
+            estimatedDuration: parseInt(document.getElementById('estimatedDuration').value, 10)
+        };
+        
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+
+            if (res.ok) {
+                const task = await res.json();
+                alert(`✅ Task '${task.taskName}' ${isUpdate ? 'updated' : 'added'} successfully!`);
+                toggleTaskModal(false); 
+                loadTasksStyled(); 
+            } else {
+                const error = await res.json();
+                alert(`❌ Failed to ${isUpdate ? 'update' : 'add'} task. Error: ${error.message || res.statusText}`);
+            }
+        } catch (err) {
+            console.error(`Error ${isUpdate ? 'updating' : 'creating'} task:`, err);
+            alert("❌ Network error or server unreachable.");
+        }
+    });
+
+    // ⭐️ Updated: Function to populate form for editing
+    async function populateFormForEdit(taskID) {
+        try {
+            const res = await fetch(`http://localhost:3000/api/tasks/${taskID}`);
+            if (!res.ok) throw new Error("Task not found or server error");
+            const task = await res.json();
+
+            currentEditTaskId = taskID; 
+
+            document.getElementById('modal-title').textContent = 'Edit Task';
+            document.getElementById('save-task-btn').textContent = 'Update';
+
+            document.getElementById('taskID').value = task.taskID;
+            document.getElementById('taskName').value = task.taskName;
+            document.getElementById('taskType').value = task.taskType;
+            document.getElementById('estimatedDuration').value = task.estimatedDuration;
+
+            if (task.scheduledStartTime) {
+                const date = new Date(task.scheduledStartTime);
+                const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                document.getElementById('scheduledStartTime').value = localISOTime;
+            }
+
+            toggleTaskModal(true); 
+        } catch (err) {
+            console.error("Error fetching task for edit:", err);
+            alert("❌ Could not load task data for editing.");
+        }
+    }
+
+
+    // ⭐️ Updated: Event listener for menu actions (Update, Delete, Toggle)
+    document.addEventListener("click", async e => {
+        const menuBtn = e.target.closest(".menu-btn");
+        const card = e.target.closest(".card");
+
+        if (menuBtn) {
+            const menu = menuBtn.parentElement;
+            menu.classList.toggle("open");
+            document.querySelectorAll(".card-menu.open").forEach(m => {
+                if (m !== menu) m.classList.remove("open");
+            });
+            return;
+        }
+
+        if (!e.target.closest(".menu-content")) {
+             document.querySelectorAll(".card-menu.open").forEach(m => {
+                m.classList.remove("open");
+            });
+        }
+        
+        if (!card) return;
+
+        // DELETE ACTION
+        if (e.target.classList.contains("delete-btn")) {
+            const id = card.dataset.id;
+            if (confirm(`Delete task with ID ${id}?`)) {
+                try {
+                    const res = await fetch(`http://localhost:3000/api/tasks/${id}`, { method: "DELETE" });
+                    if (res.ok) {
+                        alert("✅ Task deleted successfully");
+                        loadTasksStyled();
+                    } else {
+                        const error = await res.json();
+                        alert(`❌ Failed to delete task. ${error.message}`);
+                    }
+                } catch (err) {
+                    alert("❌ Network error during deletion.");
+                }
+            }
+        }
+
+        // UPDATE ACTION
+        if (e.target.classList.contains("update-btn")) {
+            const id = card.dataset.id;
+            populateFormForEdit(id);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadTasksStyled();
+    });
+</script>
+
+</body>
+</html>

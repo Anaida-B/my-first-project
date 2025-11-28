@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astronaut Health & Mission Monitoring</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: white;
+      height: 100vh;
+      background: black;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .overlay {
+      background: rgba(0, 0, 0, 0.5);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding-top: 40px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      text-shadow: 0 0 25px rgb(129, 231, 245);
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: #ddd;
+    }
+
+    .buttons a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 22px;
+      background: rgb(172, 252, 243);
+      color: black;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 10px;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .buttons a:hover {
+      background: #00cc99;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    /* Dashboard cards */
+    #dashboard {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 30px auto;
+      flex-wrap: wrap;
+    }
+
+    #dashboard .card {
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid cyan;
+      border-radius: 15px;
+      padding: 20px;
+      width: 150px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+      transition: transform 0.2s;
+    }
+
+    #dashboard .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 255, 255, 1);
+    }
+
+    #dashboard h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #1ee7dd;
+    }
+
+    #dashboard p {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 10px 0 0;
+      color: white;
+    }
+
+    /* News card */
+    #news-card {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 15px;
+      max-width: 600px;
+      box-shadow: 0 0 20px rgba(229, 143, 255, 0.999);
+      text-align: center;
+    }
+
+    #news-card img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    #news-card a {
+      color: #eb8efd;
+      font-weight: bold;
+      text-decoration: none;
+      display: block;
+      margin-top: 5px;
+    }
+
+    #news-card a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="container">
+    <h1>Astronaut Health & Mission Monitoring</h1>
+    <p>Monitor astronaut health, missions, and anomalies in real-time</p>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard"></section>
+
+    <div class="buttons">
+      <a href="astronauts.html">Astronauts</a>
+      <a href="missions.html">Missions</a>
+      <a href="mission-assignments.html">Assignments</a>
+      
+      <a href="vitals.html">Vital Logs</a>
+      <a href="anomalies.html">Anomalies</a>
+      <a href="tasks.html">Tasks</a>
+      <a href="healthAssistant.html">Health Assistant</a>
+    </div>
+  </div>
+
+  <!-- NASA APOD -->
+  <div id="news-card">
+    <img src="https://via.placeholder.com/600x300" alt="space" id="news-img">
+    <div id="news-title">Loading NASA space update...</div>
+    <a href="#" target="_blank" id="news-link">Learn more</a>
+  </div>
+
+<script>
+  async function fetchNASA() {
+    const fallbackImage = "images/fallback-space.jpg"; // your local image path
+    const fallbackTitle = "Exploring the Unknown – Offline Mode";
+    const fallbackLink = "#"; // optional, could link to a local page or stay '#'
+
+    try {
+      const response = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
+
+      // If the API fails (like HTTP 403/500)
+      if (!response.ok) throw new Error("API request failed");
+
+      const data = await response.json();
+
+      // Apply NASA image and details
+      document.body.style.backgroundImage = `url('${data.url}')`;
+      document.getElementById("news-img").src = data.url;
+      document.getElementById("news-title").innerText = data.title;
+      document.getElementById("news-link").href = data.hdurl || data.url;
+    } catch (error) {
+      console.warn("NASA API error or offline — using fallback image:", error);
+
+      // Apply fallback background and text
+      document.body.style.backgroundImage = `url('${fallbackImage}')`;
+      document.getElementById("news-img").src = fallbackImage;
+      document.getElementById("news-title").innerText = fallbackTitle;
+      document.getElementById("news-link").href = fallbackLink;
+    }
+  }
+
+  fetchNASA();
+  setInterval(fetchNASA, 86400000); // refresh daily
+</script>
+
+
+  <!-- Link to your main app.js where loadDashboard() is defined -->
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+
